@@ -1,3 +1,7 @@
+"""
+experimentation script to test out how the search_reddit tool works in practice, and how the assistant can summarize the results.
+"""
+
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 import os
