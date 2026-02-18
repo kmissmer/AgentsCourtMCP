@@ -1,23 +1,23 @@
 """
-searches Wikipedia for the researcher and skeptic agents through tavily
+searches the web for the researcher and skeptic agents through tavily
 """
 
 from tavily import TavilyClient
 from typing import Dict, List, Any
-from config import TAVILY_API_KEY
+import os
 
-class SearchWikipediaTool:
+class SearchWebTool:
     """
-    MCP tool for searching Wikipedia using Tavily's include_domains filter.
+    MCP tool for searching the web using Tavily's include_domains filter.
     """
     
     def __init__(self):
-        self.name = "search_wikipedia"
+        self.name = "search_web"
         self.description = (
-            "Search Wikipedia for information, articles, and references about a topic. "
-            "Use this when you need reliable, encyclopedic knowledge and factual content."
+            "Search the web for information, articles, and references about a topic. "
+            "Use this when you need reliable, factual content from various sources."
         )
-        self.client = TavilyClient(api_key=TAVILY_API_KEY)
+        self.client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     
     @property
     def schema(self) -> Dict[str, Any]:
@@ -34,7 +34,7 @@ class SearchWikipediaTool:
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The search query to find Wikipedia articles"
+                            "description": "The search query to find web articles and information"
                         },
                         "max_results": {
                             "type": "integer",
@@ -49,7 +49,7 @@ class SearchWikipediaTool:
     
     def execute(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         """
-        Execute the Wikipedia search using Tavily.
+        Execute the web search using Tavily.
         
         Args:
             query: Search query string
@@ -59,11 +59,11 @@ class SearchWikipediaTool:
             List of search results with title, url, snippet, and domain
         """
         try:
-            # Call Tavily with Wikipedia-only domain filter
+            # Call Tavily with web search domain filter
             response = self.client.search(
                 query=query,
                 search_depth="basic",  # basic search
-                include_domains=["wikipedia.org"],  # Only Wikipedia results
+                include_domains=["google.com"],  # Web results from Google 
                 max_results=max_results,
                 include_answer=False,  # We don't need Tavily's summary
                 include_raw_content=False  # Snippet is enough
@@ -76,7 +76,7 @@ class SearchWikipediaTool:
                     "title": result.get("title", ""),
                     "url": result.get("url", ""),
                     "snippet": result.get("content", ""),
-                    "domain": "wikipedia.org",
+                    "domain": "google.com",
                     "score": result.get("score", 0.0)
                 })
             
