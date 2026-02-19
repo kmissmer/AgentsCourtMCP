@@ -2,85 +2,83 @@
 Judge agent: weighs arguments and renders a verdict.
 """
 
-from .common import client, deployment
+import json
+from config import client, AZURE_OPENAI_DEPLOYMENT as deployment
+from core.models import Argument, Verdict, RubricScore
+from core.prompts import JUDGE_PROMPT
 
 
-def judge_agent(topic: str, researcher_arg: str, skeptic_arg: str, context: str = "") -> dict:
-	"""
-	Agent that acts as a judge.
-	Weighs both arguments, identifies stronger logic, and renders judgment.
-	"""
-	print("\n" + "=" * 80)
-	print("JUDGE AGENT - Weighing Arguments and Rendering Judgment")
-	print("=" * 80)
+def judge_agent(topic: str, researcher_arg: Argument, skeptic_arg: Argument) -> Verdict:
+    print("\n" + "=" * 80)
+    print("JUDGE AGENT - Weighing Arguments and Rendering Judgment")
+    print("=" * 80)
 
-	# Prompt the judge to evaluate both arguments
-	messages = [
-		{
-			"role": "system",
-			"content": """You are an impartial judge evaluating a debate. Your job is to:
-1. Carefully analyze both arguments
-2. Assess the quality of evidence and reasoning
-3. Identify strengths and weaknesses in each position
-4. Consider logical consistency and validity
-5. Weigh the merits of each side fairly
-6. Render a judgment on which side has the stronger case
+    messages = [
+        {
+            "role": "system",
+            "content": JUDGE_PROMPT,
+        },
+        {
+            "role": "user",
+            "content": f"""Topic: {topic}
 
-You must be objective, thorough, and justify your reasoning with specific examples from the arguments.""",
-		},
-		{
-			"role": "user",
-			"content": f"""Topic: {topic}
+RESEARCHER'S ARGUMENT (FOR):
+{researcher_arg.full_report}
 
-RESEARCHER'S ARGUMENT (In Favor):
-{researcher_arg}
+Their key points:
+{chr(10).join(f"- {p}" for p in researcher_arg.key_points)}
 
 ---
 
-SKEPTIC'S ARGUMENT (Against):
-{skeptic_arg}
+SKEPTIC'S ARGUMENT (AGAINST):
+{skeptic_arg.full_report}
 
-{f"Additional context: {context}" if context else ""}
+Their key points:
+{chr(10).join(f"- {p}" for p in skeptic_arg.key_points)}
 
-Please evaluate both arguments and provide:
-1. Analysis of the Researcher's argument (strengths and weaknesses)
-2. Analysis of the Skeptic's argument (strengths and weaknesses)
-3. Key differences and points of contention
-4. Your verdict: Which side has the stronger case?
-5. Justification for your verdict with specific reasoning""",
-		},
-	]
+Please evaluate both arguments and return your verdict as JSON in this exact format:
+{{
+    "for_scores": {{
+        "evidence_quality": int,
+        "logical_coherence": int,
+        "argument_completeness": int,
+        "rebuttal_strength": int
+    }},
+    "against_scores": {{
+        "evidence_quality": int,
+        "logical_coherence": int,
+        "argument_completeness": int,
+        "rebuttal_strength": int
+    }},
+    "winner": "FOR" or "AGAINST" or "DRAW",
+    "judge_reasoning": "detailed explanation of why you ruled this way",
+    "closing_summary": "2-3 sentence plain English verdict"
+}}""",
+        },
+    ]
 
-	response = client.chat.completions.create(
-		messages=messages,
-		max_tokens=1500,
-		temperature=0.7,
-		top_p=1.0,
-		model=deployment,
-	)
+    response = client.chat.completions.create(
+        model=deployment,
+        messages=messages,
+        max_tokens=1500,
+        temperature=0.7,
+        response_format={"type": "json_object"},
+    )
 
-	judgment = response.choices[0].message.content
-	print("\n[JUDGE'S VERDICT]")
-	print(judgment)
+    raw = json.loads(response.choices[0].message.content)
 
-	# Extract a simple verdict (Pro, Con, or Neutral)
-	judgment_lower = judgment.lower()
-	if "researcher" in judgment_lower and (
-		"stronger" in judgment_lower
-		or "prevail" in judgment_lower
-		or "favors" in judgment_lower
-		or "support" in judgment_lower
-	):
-		verdict = "PRO"
-	elif "skeptic" in judgment_lower and (
-		"stronger" in judgment_lower or "prevail" in judgment_lower or "favors" in judgment_lower
-	):
-		verdict = "CON"
-	else:
-		verdict = "NEUTRAL/MIXED"
+    verdict = Verdict(
+        winner=raw["winner"],
+        for_scores=RubricScore(**raw["for_scores"]),
+        against_scores=RubricScore(**raw["against_scores"]),
+        judge_reasoning=raw["judge_reasoning"],
+        closing_summary=raw["closing_summary"],
+    )
 
-	return {
-		"judgment": judgment,
-		"verdict": verdict,
-		"topic": topic,
-	}
+    print("\n[JUDGE'S VERDICT]")
+    print(f"Winner: {verdict.winner}")
+    print(f"FOR total score: {verdict.for_scores.total}")
+    print(f"AGAINST total score: {verdict.against_scores.total}")
+    print(f"Reasoning: {verdict.judge_reasoning}")
+
+    return verdict

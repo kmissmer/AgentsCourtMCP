@@ -6,16 +6,9 @@ This module exposes a minimal tool registry for MCP-style tool usage.
 
 from typing import Any, Dict, List, Optional
 
-try:
-	from mcp.tools.search_reddit import SearchRedditTool
-except Exception:  # pragma: no cover - best-effort optional import
-	SearchRedditTool = None
+from mcp.tools.search_reddit import SearchRedditTool
 
-try:
-	from mcp.tools.search_wikipedia import SearchWikipediaTool
-except Exception:  # pragma: no cover - best-effort optional import
-	SearchWikipediaTool = None
-
+from mcp.tools.search_wikipedia import SearchWikipediaTool
 
 class ToolRegistry:
 	"""Simple registry for MCP tools."""

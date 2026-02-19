@@ -2,61 +2,90 @@
 Researcher agent: argues in favor.
 """
 
-from .common import client, deployment, search_for_information
+import json
+from config import client, AZURE_OPENAI_DEPLOYMENT as deployment
+from mcp.server import registry
+from core.models import Argument, Source
+from core.prompts import RESEARCHER_PROMPT
 
 
-def researcher_agent(topic: str, context: str = "") -> str:
-	"""
-	Agent that argues IN FAVOR of a cause/topic.
-	Searches for supporting evidence and builds the best case.
-	"""
-	print("\n" + "=" * 80)
-	print("RESEARCHER AGENT - Building the case IN FAVOR")
-	print("=" * 80)
+def researcher_agent(topic: str, context: str = "") -> Argument:
+    print("\n" + "=" * 80)
+    print("RESEARCHER AGENT - Building the case IN FAVOR")
+    print("=" * 80)
 
-	# Search for supporting evidence (from both Reddit and Wikipedia)
-	search_query = f"{topic} benefits advantages positive"
-	search_results = search_for_information(search_query, max_results=5, source="both")
-
-	print("\n[Search Results]")
-	print(search_results)
-
-	# Prompt the researcher to build the best case
-	messages = [
-		{
-			"role": "system",
-			"content": """You are a skilled advocate arguing IN FAVOR of a position. Your job is to:
-1. Review the evidence provided
-2. Build the strongest possible case for supporting this position
-3. Highlight key benefits, advantages, and positive outcomes
-4. Anticipate and preemptively address counterarguments
-5. Use logical reasoning and evidence to support your position
-
-Be persuasive, well-reasoned, and cite the evidence provided. Present your argument in a clear, structured format.""",
-		},
-		{
-			"role": "user",
-			"content": f"""Topic: {topic}
-
-Evidence from community discussions and research:
-{search_results}
-
+    messages = [
+        {
+            "role": "system",
+            "content": RESEARCHER_PROMPT,
+        },
+        {
+            "role": "user",
+            "content": f"""Topic: {topic}
 {f"Additional context: {context}" if context else ""}
 
-Please present your strongest argument IN FAVOR of this position. Be comprehensive but concise (500-800 words).""",
-		},
-	]
+Please research and present your strongest argument IN FAVOR of this position.
+Return your response as JSON in this exact format:
+{{
+    "headline_claim": "one sentence summary of your main argument",
+    "key_points": ["point 1", "point 2", "point 3"],
+    "sources": [
+        {{"title": "...", "url": "...", "snippet": "...", "domain": "..."}}
+    ],
+    "full_report": "your full argument in prose (300-500 words)"
+}}""",
+        },
+    ]
 
-	response = client.chat.completions.create(
-		messages=messages,
-		max_tokens=1000,
-		temperature=0.7,
-		top_p=1.0,
-		model=deployment,
-	)
+    # Tool calling loop
+    while True:
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=messages,
+            tools=registry.get_schemas(),
+            tool_choice="auto",
+            max_tokens=1000,
+            temperature=0.7,
+        )
 
-	argument = response.choices[0].message.content
-	print("\n[RESEARCHER'S ARGUMENT]")
-	print(argument)
+        response_message = response.choices[0].message
 
-	return argument
+        # If no tool calls, the model is done researching
+        if not response_message.tool_calls:
+            break
+
+        # Add the model's response to message history
+        messages.append(response_message)
+
+        # Execute each tool call and feed results back
+        for tool_call in response_message.tool_calls:
+            tool_name = tool_call.function.name
+            tool_args = json.loads(tool_call.function.arguments)
+
+            print(f"\n[TOOL CALL] {tool_name}({tool_args})")
+
+            result = registry.execute(tool_name, **tool_args)
+
+            print(f"[TOOL RESULT] {str(result)[:200]}...")
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": str(result),
+            })
+
+    # Parse the final response into an Argument model
+    raw = json.loads(response_message.content)
+
+    argument = Argument(
+        side="FOR",
+        headline_claim=raw["headline_claim"],
+        key_points=raw["key_points"],
+        sources=[Source(**s) for s in raw.get("sources", [])],
+        full_report=raw["full_report"]
+    )
+
+    print("\n[RESEARCHER'S ARGUMENT]")
+    print(argument.full_report)
+
+    return argument

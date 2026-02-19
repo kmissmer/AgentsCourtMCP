@@ -67,7 +67,9 @@ class SearchRedditTool:
                 include_domains=["reddit.com"],  # Only Reddit results
                 max_results=max_results,
                 include_answer=False,  # We don't need Tavily's summary
-                include_raw_content=False  # Snippet is enough
+                include_raw_content=False,  # Snippet is enough
+                topic="news",
+                days=30  # Limit to recent discussions for relevance
             )
             
             # Parse and return results
