@@ -4,7 +4,7 @@ searches reddit for the researcher and skeptic agents through tavily
 
 from tavily import TavilyClient
 from typing import Dict, List, Any
-import os
+from config import TAVILY_API_KEY
 
 class SearchRedditTool:
     """
@@ -18,7 +18,7 @@ class SearchRedditTool:
             "and discussions about a topic. Use this when you need real-world "
             "user perspectives, common objections, or community wisdom."
         )
-        self.client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+        self.client = TavilyClient(api_key=TAVILY_API_KEY)
     
     @property
     def schema(self) -> Dict[str, Any]:
@@ -67,7 +67,9 @@ class SearchRedditTool:
                 include_domains=["reddit.com"],  # Only Reddit results
                 max_results=max_results,
                 include_answer=False,  # We don't need Tavily's summary
-                include_raw_content=False  # Snippet is enough
+                include_raw_content=False,  # Snippet is enough
+                topic="news",
+                days=30  # Limit to recent discussions for relevance
             )
             
             # Parse and return results
