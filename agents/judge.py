@@ -4,7 +4,7 @@ Judge agent: weighs arguments and renders a verdict.
 
 import json
 from config import client, AZURE_OPENAI_DEPLOYMENT as deployment
-from core.models import Argument, Verdict, RubricScore
+from core.models import Argument, Verdict
 from core.prompts import JUDGE_PROMPT
 
 
@@ -69,16 +69,12 @@ Please evaluate both arguments and return your verdict as JSON in this exact for
 
     verdict = Verdict(
         winner=raw["winner"],
-        for_scores=RubricScore(**raw["for_scores"]),
-        against_scores=RubricScore(**raw["against_scores"]),
         judge_reasoning=raw["judge_reasoning"],
         closing_summary=raw["closing_summary"],
     )
 
     print("\n[JUDGE'S VERDICT]")
     print(f"Winner: {verdict.winner}")
-    print(f"FOR total score: {verdict.for_scores.total}")
-    print(f"AGAINST total score: {verdict.against_scores.total}")
     print(f"Reasoning: {verdict.judge_reasoning}")
 
     return verdict

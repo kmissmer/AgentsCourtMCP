@@ -53,16 +53,6 @@ def render_sources(sources) -> None:
 def render_verdict_summary(verdict) -> None:
     st.success(f"Winner: {verdict.winner}")
 
-    score_col_for, score_col_against = st.columns(2)
-    with score_col_for:
-        st.subheader("FOR Score")
-        st.metric("Total", verdict.for_scores.total)
-        st.json(verdict.for_scores.model_dump())
-    with score_col_against:
-        st.subheader("AGAINST Score")
-        st.metric("Total", verdict.against_scores.total)
-        st.json(verdict.against_scores.model_dump())
-
 
 def render_debate_tabs(researcher_argument, skeptic_argument, verdict) -> None:
     tab_for, tab_against, tab_judge = st.tabs(["Researcher (FOR)", "Skeptic (AGAINST)", "Judge"])

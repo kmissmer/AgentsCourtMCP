@@ -38,6 +38,7 @@ Return your response as JSON in this exact format:
     ]
 
     # Tool calling loop
+
     while True:
         response = client.chat.completions.create(
             model=deployment,

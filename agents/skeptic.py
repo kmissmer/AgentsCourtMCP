@@ -9,7 +9,7 @@ from core.models import Argument, Source
 from core.prompts import SKEPTIC_PROMPT
 
 
-def skeptic_agent(topic: str, researcher_argument: Argument, context: str = "") -> Argument:
+def skeptic_agent(topic: str, context: str = "") -> Argument:
     print("\n" + "=" * 80)
     print("SKEPTIC AGENT - Building the case AGAINST")
     print("=" * 80)
@@ -24,12 +24,6 @@ def skeptic_agent(topic: str, researcher_argument: Argument, context: str = "") 
             "content": f"""Topic: {topic}
 {f"Additional context: {context}" if context else ""}
 
-The Researcher's argument you must counter:
-{researcher_argument.full_report}
-
-Their key points:
-{chr(10).join(f"- {p}" for p in researcher_argument.key_points)}
-
 Please research and present your strongest argument AGAINST this position.
 Return your response as JSON in this exact format:
 {{
@@ -43,7 +37,7 @@ Return your response as JSON in this exact format:
         },
     ]
 
-    # Tool calling loop
+    
     while True:
         response = client.chat.completions.create(
             model=deployment,
