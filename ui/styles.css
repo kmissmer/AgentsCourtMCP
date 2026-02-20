@@ -1,0 +1,16 @@
+.stApp {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+[data-testid="stMetricValue"] {
+  font-weight: 700;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+  gap: 8px;
+}
+
+.stTabs [data-baseweb="tab"] {
+  border-radius: 8px 8px 0 0;
+}
