@@ -38,6 +38,7 @@ Return your response as JSON in this exact format:
     ]
 
     # Tool calling loop
+
     while True:
         response = client.chat.completions.create(
             model=deployment,
@@ -75,7 +76,17 @@ Return your response as JSON in this exact format:
             })
 
     # Parse the final response into an Argument model
-    raw = json.loads(response_message.content)
+    try:
+        # Check if response is empty
+        if not response_message.content or not response_message.content.strip():
+            print("Error: Empty response from API")
+            return {"error": "Empty response from researcher agent"}
+        
+        raw = json.loads(response_message.content)
+    except json.JSONDecodeError as e:
+        print(f"JSON Parse Error: {e}")
+        print(f"Response content: {response_message.content[:200]}")  # Print first 200 chars
+        return {"error": f"Failed to parse response: {str(e)}"}
 
     argument = Argument(
         side="FOR",

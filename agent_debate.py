@@ -13,6 +13,7 @@ Usage:
 from agents.researcher import researcher_agent
 from agents.skeptic import skeptic_agent
 from agents.judge import judge_agent
+from core.models import Argument
 
 
 def run_debate(topic: str, context: str = "") -> dict:
@@ -41,9 +42,17 @@ def run_debate(topic: str, context: str = "") -> dict:
 
     # Round 1: Researcher builds the FOR case
     researcher_argument = researcher_agent(topic, context)
+    
+    # Validate researcher_argument
+    if not isinstance(researcher_argument, Argument):
+        raise TypeError(f"Researcher agent failed. Expected Argument object, got {type(researcher_argument)}: {researcher_argument}")
 
     # Round 2: Skeptic sees the FOR case and builds the AGAINST case
-    skeptic_argument = skeptic_agent(topic, researcher_argument, context)
+    skeptic_argument = skeptic_agent(topic, context)
+    
+    # Validate skeptic_argument
+    if not isinstance(skeptic_argument, Argument):
+        raise TypeError(f"Skeptic agent failed. Expected Argument object, got {type(skeptic_argument)}: {skeptic_argument}")
 
     # Round 3: Judge reads both and renders a verdict (no tools, reasoning only)
     verdict = judge_agent(topic, researcher_argument, skeptic_argument)
@@ -62,17 +71,7 @@ def run_debate(topic: str, context: str = "") -> dict:
     print(f"{'=' * 80}")
     print(f"Topic:   {topic}")
     print(f"Winner:  {verdict.winner}")
-    print(f"FOR:     {verdict.for_scores.total} pts")
-    print(f"AGAINST: {verdict.against_scores.total} pts")
     print(f"Summary: {verdict.closing_summary}")
     print(f"{'=' * 80}")
 
     return results
-
-
-# ── Change these to test different topics ──────────────────────────────
-topic   = "Remote work is better than office work"
-context = "Consider productivity, work-life balance, collaboration, and employee satisfaction."
-# ───────────────────────────────────────────────────────────────────────
-
-results = run_debate(topic, context)
