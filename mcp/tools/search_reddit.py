@@ -1,5 +1,5 @@
 """
-searches reddit for the researcher and skeptic agents through tavily
+searches reddit for the Marcus and Colton agents through tavily
 """
 
 from tavily import TavilyClient

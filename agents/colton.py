@@ -1,30 +1,30 @@
 """
-Skeptic agent: argues against.
+Colton agent: argues for the second option in a two-choice debate.
 """
 
 import json
 from config import client, AZURE_OPENAI_DEPLOYMENT as deployment
 from mcp.server import registry
 from core.models import Argument, Source
-from core.prompts import SKEPTIC_PROMPT
+from core.prompts import COLTON_PROMPT
 
 
-def skeptic_agent(topic: str, context: str = "") -> Argument:
+def colton_agent(topic: str, context: str = "") -> Argument:
     print("\n" + "=" * 80)
-    print("SKEPTIC AGENT - Building the case AGAINST")
+    print("COLTON - Building the case for the second option listed in the topic")
     print("=" * 80)
 
     messages = [
         {
             "role": "system",
-            "content": SKEPTIC_PROMPT,
+            "content": COLTON_PROMPT,
         },
         {
             "role": "user",
             "content": f"""Topic: {topic}
 {f"Additional context: {context}" if context else ""}
 
-Please research and present your strongest argument AGAINST this position.
+Please research and present your strongest argument for your assigned side.
 Return your response as JSON in this exact format:
 {{
     "headline_claim": "one sentence summary of your main argument",
@@ -37,7 +37,7 @@ Return your response as JSON in this exact format:
         },
     ]
 
-    
+    # Tool calling loop
     while True:
         response = client.chat.completions.create(
             model=deployment,
@@ -49,25 +49,15 @@ Return your response as JSON in this exact format:
         )
 
         response_message = response.choices[0].message
-
-        # If no tool calls, the model is done researching
         if not response_message.tool_calls:
             break
-
-        # Add the model's response to message history
         messages.append(response_message)
-
-        # Execute each tool call and feed results back
         for tool_call in response_message.tool_calls:
             tool_name = tool_call.function.name
             tool_args = json.loads(tool_call.function.arguments)
-
             print(f"\n[TOOL CALL] {tool_name}({tool_args})")
-
             result = registry.execute(tool_name, **tool_args)
-
             print(f"[TOOL RESULT] {str(result)[:200]}...")
-
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
@@ -76,26 +66,24 @@ Return your response as JSON in this exact format:
 
     # Parse the final response into an Argument model
     try:
-    # Check if response is empty
         if not response_message.content or not response_message.content.strip():
             print("Error: Empty response from API")
-            return {"error": "Empty response from researcher agent"}
-        
+            return {"error": "Empty response from Colton"}
         raw = json.loads(response_message.content)
     except json.JSONDecodeError as e:
         print(f"JSON Parse Error: {e}")
-        print(f"Response content: {response_message.content[:200]}")  # Print first 200 chars
+        print(f"Response content: {response_message.content[:200]}")
         return {"error": f"Failed to parse response: {str(e)}"}
 
     argument = Argument(
-        side="AGAINST",
+        side="Colton",
         headline_claim=raw["headline_claim"],
         key_points=raw["key_points"],
         sources=[Source(**s) for s in raw.get("sources", [])],
         full_report=raw["full_report"]
     )
 
-    print("\n[SKEPTIC'S ARGUMENT]")
+    print("\n[COLTON'S ARGUMENT]")
     print(argument.full_report)
 
     return argument

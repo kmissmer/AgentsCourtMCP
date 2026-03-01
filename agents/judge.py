@@ -8,9 +8,9 @@ from core.models import Argument, Verdict
 from core.prompts import JUDGE_PROMPT
 
 
-def judge_agent(topic: str, researcher_arg: Argument, skeptic_arg: Argument) -> Verdict:
+def judge_agent(topic: str, marcus_arg: Argument, colton_arg: Argument) -> Verdict:
     print("\n" + "=" * 80)
-    print("JUDGE AGENT - Weighing Arguments and Rendering Judgment")
+    print("PIERCE (JUDGE) - Weighing Arguments and Rendering Judgment")
     print("=" * 80)
 
     messages = [
@@ -22,36 +22,24 @@ def judge_agent(topic: str, researcher_arg: Argument, skeptic_arg: Argument) -> 
             "role": "user",
             "content": f"""Topic: {topic}
 
-RESEARCHER'S ARGUMENT (FOR):
-{researcher_arg.full_report}
+MARCUS'S ARGUMENT:
+{marcus_arg.full_report}
 
 Their key points:
-{chr(10).join(f"- {p}" for p in researcher_arg.key_points)}
+{chr(10).join(f"- {p}" for p in marcus_arg.key_points)}
 
 ---
 
-SKEPTIC'S ARGUMENT (AGAINST):
-{skeptic_arg.full_report}
+COLTON'S ARGUMENT:
+{colton_arg.full_report}
 
 Their key points:
-{chr(10).join(f"- {p}" for p in skeptic_arg.key_points)}
+{chr(10).join(f"- {p}" for p in colton_arg.key_points)}
 
 Please evaluate both arguments and return your verdict as JSON in this exact format:
 {{
-    "for_scores": {{
-        "evidence_quality": int,
-        "logical_coherence": int,
-        "argument_completeness": int,
-        "rebuttal_strength": int
-    }},
-    "against_scores": {{
-        "evidence_quality": int,
-        "logical_coherence": int,
-        "argument_completeness": int,
-        "rebuttal_strength": int
-    }},
-    "winner": "FOR" or "AGAINST" or "DRAW",
-    "judge_reasoning": "detailed explanation of why you ruled this way",
+    "winner": "Marcus", "Colton", or "DRAW",
+    "judge_reasoning": "your detailed analysis",
     "closing_summary": "2-3 sentence plain English verdict"
 }}""",
         },
@@ -73,7 +61,7 @@ Please evaluate both arguments and return your verdict as JSON in this exact for
         closing_summary=raw["closing_summary"],
     )
 
-    print("\n[JUDGE'S VERDICT]")
+    print("\n[JUDGE PIERCE's VERDICT]")
     print(f"Winner: {verdict.winner}")
     print(f"Reasoning: {verdict.judge_reasoning}")
 

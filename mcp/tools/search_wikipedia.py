@@ -1,5 +1,5 @@
 """
-searches Wikipedia for the researcher and skeptic agents through tavily
+searches Wikipedia for the Marcus and Colton agents through tavily
 """
 
 from tavily import TavilyClient
