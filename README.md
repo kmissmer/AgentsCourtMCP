@@ -78,6 +78,10 @@ AgentsCourtMCP/
    pip install -r requirements.txt
    ```
 
+3. **Create .env file in teh same structure as .env.example**
+- This requires the Azure OpenAI API key, Endpoint, API Version, and Model Deployment
+- It also requires the Tavily API Key
+
 ## Usage
 
 ### Streamlit UI
